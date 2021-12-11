@@ -1,0 +1,39 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:latest
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    expose:
+      - 5432
+    env_file:
+      - './.env'
+  web:
+    build: .
+    restart: always
+    volumes:
+      - static_volume:/home/app/web/static
+      - media_volume:/home/app/web/media
+    expose:
+      - 8000
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+    env_file:
+      - './.env'
+  nginx:
+    build: ./nginx
+    volumes:
+     - static_volume:/home/app/web/static
+     - media_volume:/home/app/web/media
+    ports:
+      - 80:80
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
