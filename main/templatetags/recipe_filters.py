@@ -9,33 +9,24 @@ register = template.Library()
 def is_favorite(request, recipe):
     """Определяет находится ли рецепт в избранном."""
 
-    if Favorite.objects.filter(
+    return Favorite.objects.filter(
         user=request.user, recipe=recipe
-    ).exists():
-        return True
-
-    return False
+    ).exists()
 
 
 @register.filter(name='is_follower')
 def is_follower(request, profile):
     """Определяет подписан ли пользователь на автора."""
 
-    if Subscription.objects.filter(
+    return Subscription.objects.filter(
         user=request.user, author=profile
-    ).exists():
-        return True
-
-    return False
+    ).exists()
 
 
 @register.filter(name='is_in_purchases')
 def is_in_purchases(request, recipe):
     """Определяет находится ли рецепт в списке покупок."""
 
-    if ShopList.objects.filter(
+    return ShopList.objects.filter(
         user=request.user, recipe=recipe
-    ).exists():
-        return True
-
-    return False
+    ).exists()

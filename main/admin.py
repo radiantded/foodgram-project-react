@@ -12,7 +12,7 @@ class RecipeAdmin(admin.ModelAdmin):
         result = Favorite.objects.filter(recipe=obj).count()
         return result
 
-    show_favorites.short_description = "Favorite"
+    show_favorites.short_description = 'Favorite'
 
 
 class IngredientAdmin(admin.ModelAdmin):

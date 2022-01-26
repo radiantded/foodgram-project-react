@@ -4,9 +4,11 @@ import json
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Count
+from django.db.models.aggregates import Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
+from foodgram.settings import POSTS_PER_PAGE
 
 from .forms import RecipeCreateForm, RecipeForm
 from .models import (Amount, Favorite, Ingredient, Recipe, ShopList,
@@ -14,11 +16,34 @@ from .models import (Amount, Favorite, Ingredient, Recipe, ShopList,
 from .utils import get_ingredients, get_tags_for_edit
 
 
-def index(request):
+def get_tags_list(request):
     tags_list = request.GET.getlist('filters')
-
-    if tags_list == []:
+    if not tags_list:
         tags_list = ['breakfast', 'lunch', 'dinner']
+    return tags_list
+
+
+def save_form(form, request, edit=False):
+    my_recipe = form.save(commit=False)
+    if edit is True:
+        my_recipe.recipe_amount.all().delete()
+    if edit is False:
+        my_recipe.author = request.user
+    my_recipe.save()
+    ingredients = get_ingredients(request)
+    for title, quantity in ingredients.items():
+        ingredient = get_object_or_404(Ingredient, title=title)
+        amount = Amount(
+            recipe=my_recipe,
+            ingredient=ingredient,
+            quantity=quantity
+        )
+        amount.save()
+    return my_recipe
+
+
+def index(request):
+    tags_list = get_tags_list(request)
 
     recipe_list = Recipe.objects.filter(
         tags__value__in=tags_list
@@ -30,20 +55,11 @@ def index(request):
 
     all_tags = Tag.objects.all()
 
-    paginator = Paginator(recipe_list, 6)
+    paginator = Paginator(recipe_list, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
 
-    if request.user.is_authenticated:
-        return render(request, 'indexAuth.html', {
-            'paginator': paginator,
-            'page': page,
-            'all_tags': all_tags,
-            'tags_list': tags_list,
-        }
-        )
-
-    return render(request, 'indexNotAuth.html', {
+    return render(request, 'index.html', {
         'paginator': paginator,
         'page': page,
         'all_tags': all_tags,
@@ -55,10 +71,7 @@ def index(request):
 def profile(request, username):
     follow_button = False
 
-    tags_list = request.GET.getlist('filters')
-
-    if tags_list == []:
-        tags_list = ['breakfast', 'lunch', 'dinner']
+    tags_list = get_tags_list(request)
 
     all_tags = Tag.objects.all()
 
@@ -75,7 +88,7 @@ def profile(request, username):
     if request.user.is_authenticated and request.user != profile:
         follow_button = True
 
-    paginator = Paginator(recipes_profile, 6)
+    paginator = Paginator(recipes_profile, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
 
@@ -100,7 +113,7 @@ def recipe_view(request, username, recipe_id):
     if not request.user.is_authenticated:
         return render(
             request,
-            'singlePageNotAuth.html',
+            'singlePage.html',
             {'recipe': recipe}
         )
 
@@ -121,54 +134,29 @@ def ingredients(request):
     Функция для подсказки при написании ингредиента в форме создания рецепта
     возвращает JSON с ингредиентами по первым введенным буквам.
     """
-    text = request.GET['query']
-    ingredients = Ingredient.objects.filter(
+    text = request.GET.get('query')
+    ingredients = list(Ingredient.objects.filter(
         title__istartswith=text
+    ).values())
+    return JsonResponse(ingredients, safe=False)
+
+
+@login_required
+def new_recipe(request):
+    form = RecipeCreateForm(
+        request.POST or None,
+        files=request.FILES or None
     )
 
-    ing_list = []
-
-    for ing in ingredients:
-        ing_dict = {}
-        ing_dict['title'] = ing.title
-        ing_dict['dimension'] = ing.dimension
-        ing_list.append(ing_dict)
-
-    return JsonResponse(ing_list, safe=False)
-
-
-def new_recipe(request):
-
-    if request.method == "POST":
-        form = RecipeCreateForm(
-            request.POST or None,
-            files=request.FILES or None
+    if form.is_valid():
+        my_recipe = save_form(form, request)
+        form.save_m2m()
+        return redirect(
+            'recipe',
+            recipe_id=my_recipe.id,
+            username=request.user.username
         )
 
-        if form.is_valid():
-
-            my_recipe = form.save(commit=False)
-            my_recipe.author = request.user
-            my_recipe.save()
-
-            ingredients = get_ingredients(request)
-            for title, quantity in ingredients.items():
-                ingredient = Ingredient.objects.get(title=title)
-                amount = Amount(
-                    recipe=my_recipe,
-                    ingredient=ingredient,
-                    quantity=quantity
-                )
-                amount.save()
-
-            form.save_m2m()
-            return redirect(
-                'recipe',
-                recipe_id=my_recipe.id,
-                username=request.user.username
-            )
-
-    form = RecipeCreateForm()
     return render(request, "formRecipe.html", {
         'form': form,
     })
@@ -198,20 +186,7 @@ def recipe_edit(request, username, recipe_id):
         )
 
         if form.is_valid():
-            my_recipe = form.save(commit=False)
-            my_recipe.author = request.user
-            my_recipe.save()
-            my_recipe.recipe_amount.all().delete()
-            ingredients = get_ingredients(request)
-            for title, quantity in ingredients.items():
-                ingredient = Ingredient.objects.get(title=title)
-                amount = Amount(
-                    recipe=my_recipe,
-                    ingredient=ingredient,
-                    quantity=quantity
-                )
-                amount.save()
-
+            my_recipe = save_form(form, request, edit=True)
             my_recipe.tags.set(new_tags)
             return redirect(
                 'recipe',
@@ -220,7 +195,7 @@ def recipe_edit(request, username, recipe_id):
             )
 
     form = RecipeForm(instance=recipe)
-    return render(request, "formChangeRecipe.html", {
+    return render(request, "formRecipe.html", {
         'form': form,
         'recipe': recipe,
         'all_tags': all_tags,
@@ -246,10 +221,7 @@ def recipe_delete(request, username, recipe_id):
 
 @login_required
 def favorites(request):
-    tags_list = request.GET.getlist('filters')
-
-    if tags_list == []:
-        tags_list = ['breakfast', 'lunch', 'dinner']
+    tags_list = get_tags_list(request)
 
     all_tags = Tag.objects.all()
 
@@ -259,7 +231,7 @@ def favorites(request):
         tags__value__in=tags_list
     ).distinct()
 
-    paginator = Paginator(recipe_list, 6)
+    paginator = Paginator(recipe_list, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
 
@@ -283,14 +255,11 @@ def change_favorites(request, recipe_id):
             Recipe, pk=recipe_id
         )
 
-        obj, created = Favorite.objects.get_or_create(
+        _, created = Favorite.objects.get_or_create(
             user=request.user, recipe=recipe
         )
 
-        if not created:
-            return JsonResponse({'success': False})
-
-        return JsonResponse({'success': True})
+        return JsonResponse({'success': True if created else False})
 
     # удалить из изобранного
     elif request.method == "DELETE":
@@ -302,10 +271,7 @@ def change_favorites(request, recipe_id):
             user=request.user, recipe=recipe
         ).delete()
 
-        if removed:
-            return JsonResponse({'success': True})
-
-        return JsonResponse({'success': False})
+        return JsonResponse({'success': True if removed else False})
 
 
 @login_required
@@ -330,34 +296,19 @@ def get_purchases(request):
     """Скачать лист покупок."""
     recipes = Recipe.objects.filter(
         shop_list__user=request.user
-    )
-
-    ing: dict = {}
-
-    for recipe in recipes:
-        ingredients = recipe.ingredients.values_list(
-            'title', 'dimension'
-        )
-        amount = recipe.recipe_amount.values_list(
-            'quantity', flat=True
-        )
-
-        for num in range(len(ingredients)):
-            title: str = ingredients[num][0]
-            dimension: str = ingredients[num][1]
-            quantity: int = amount[num]
-
-            if title in ing.keys():
-                ing[title] = [ing[title][0] + quantity, dimension]
-            else:
-                ing[title] = [quantity, dimension]
+    ).values(
+        'ingredients__title',
+        'ingredients__dimension',
+    ).annotate(amount=Sum('ingredients__ingredient_amount__quantity'))
 
     response = HttpResponse(content_type='txt/csv')
     response['Content-Disposition'] = 'attachment; filename="shop_list.txt"'
     writer = csv.writer(response)
 
-    for key, value in ing.items():
-        writer.writerow([f'{key} ({value[1]}) - {value[0]}'])
+    for item in recipes:
+        writer.writerow([f"{item['ingredients__title']} "
+                         f"({item['amount']} "
+                         f"{item['ingredients__dimension']})"])
 
     return response
 
@@ -366,21 +317,16 @@ def get_purchases(request):
 @require_http_methods(["POST", "DELETE"])
 def purchases(request, recipe_id):
 
-    # добавить в список покупок
     if request.method == "POST":
         recipe_id = json.loads(request.body).get('id')
         recipe = get_object_or_404(Recipe, pk=recipe_id)
 
-        obj, created = ShopList.objects.get_or_create(
+        _, created = ShopList.objects.get_or_create(
             user=request.user, recipe=recipe
         )
 
-        if not created:
-            return JsonResponse({'success': False})
+        return JsonResponse({'success': True if created else False})
 
-        return JsonResponse({'success': True})
-
-    # удалить из списка покупок
     elif request.method == "DELETE":
         recipe = get_object_or_404(Recipe, pk=recipe_id)
 
@@ -388,22 +334,18 @@ def purchases(request, recipe_id):
             user=request.user, recipe=recipe
         ).delete()
 
-        if removed:
-            return JsonResponse({'success': True})
-
-        return JsonResponse({'success': False})
+        return JsonResponse({'success': True if removed else False})
 
 
 @login_required
 @require_http_methods(["POST", "DELETE"])
 def subscriptions(request, author_id):
 
-    # подписаться на автора
     if request.method == "POST":
         author_id = json.loads(request.body).get('id')
         author = get_object_or_404(User, id=author_id)
 
-        obj, created = Subscription.objects.get_or_create(
+        _, created = Subscription.objects.get_or_create(
             user=request.user, author=author
         )
 
@@ -412,7 +354,6 @@ def subscriptions(request, author_id):
 
         return JsonResponse({'success': True})
 
-    # отписаться от автора
     elif request.method == "DELETE":
         author = get_object_or_404(User, id=author_id)
 
@@ -420,10 +361,7 @@ def subscriptions(request, author_id):
             user=request.user, author=author
         ).delete()
 
-        if removed:
-            return JsonResponse({'success': True})
-
-        return JsonResponse({'success': False})
+        return JsonResponse({'success': False if not removed else True})
 
 
 @login_required
@@ -436,19 +374,16 @@ def my_follow(request):
         )
     )
 
-    recipe: dict = {}
-    for sub in subscriptions:
-        recipe[sub] = Recipe.objects.filter(
-            author=sub
-        )[:3]
+    recipes = Recipe.objects.filter(
+            author__in=subscriptions)
 
-    paginator = Paginator(subscriptions, 6)
+    paginator = Paginator(subscriptions, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
 
     return render(request, 'myFollow.html', {
         'paginator': paginator,
         'page': page,
-        'recipe': recipe,
+        'recipe': recipes,
     }
     )

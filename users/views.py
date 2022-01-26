@@ -1,6 +1,8 @@
 from django.core.mail import send_mail
 from django.views.generic import CreateView
 
+from foodgram.settings import ADMIN_EMAIL
+
 from .forms import CreationForm
 
 
@@ -18,7 +20,7 @@ class SignUp(CreateView):
         send_mail(
             'Регистрация',
             'Регистрация прошла успешно!',
-            'foodgram.ru <admin@foodgram.ru>',
+            ADMIN_EMAIL,
             [email],
             fail_silently=False
         )

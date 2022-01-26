@@ -28,7 +28,7 @@
                         <p class="recipe__text"><span class="icon-time"></span>&#160;&#160;{{ recipe.cooking_time }}&#160;мин</p>
                     </div>
 
-                    <a href="{% url 'shop_list' %}?recipe_id={{recipe.id}}" class="shopping-list__button link">Удалить</a>
+                    <a href="{% url 'shop_list' %}?recipe_id={{ recipe.id }}" class="shopping-list__button link">Удалить</a>
                 </li>
             {% endfor %}
         </ul>
@@ -44,5 +44,5 @@
 <script src="{% static 'js/components/ShopList.js' %}"></script>
 <script src="{% static 'js/api/Api.js' %}"></script>
 <script src="{% static 'shopList.js' %}"></script>
-{% endblock js%}
+{% endblock js %}
 

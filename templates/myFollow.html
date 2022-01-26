@@ -24,7 +24,7 @@
     </div>
 
     {% if page.has_other_pages %}
-        {% include "includes/paginator.html" with items=page paginator=paginator%}
+        {% include "includes/paginator.html" with items=page paginator=paginator %}
     {% endif %}
 
 </main>
@@ -39,4 +39,4 @@
 <script src="{% static 'js/components/Header.js' %}"></script>
 <script src="{% static 'js/api/Api.js' %}"></script>
 <script src="{% static 'myFollow.js' %}"></script>
-{% endblock js%}
+{% endblock js %}
