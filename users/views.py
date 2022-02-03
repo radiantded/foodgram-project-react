@@ -1,5 +1,10 @@
 from django.core.mail import send_mail
+from django.urls import reverse_lazy
 from django.views.generic import CreateView
+from django.contrib.auth.views import (LoginView, PasswordResetView,
+                                       PasswordChangeView,
+                                       PasswordChangeDoneView,
+                                       PasswordResetDoneView)
 
 from foodgram.settings import ADMIN_EMAIL
 
@@ -24,3 +29,25 @@ class SignUp(CreateView):
             [email],
             fail_silently=False
         )
+
+
+class Login(LoginView):
+    template_name = 'login.html'
+
+
+class PassReset(PasswordResetView):
+    success_url = reverse_lazy('password_reset_done')
+    template_name = 'password_reset_form.html'
+
+
+class PassChange(PasswordChangeView):
+    success_url = reverse_lazy('pass_change_done')
+    template_name = 'password_change_form.html'
+
+
+class PassChangeDone(PasswordChangeDoneView):
+    template_name = 'password_change_done.html'
+
+
+class PassResetDone(PasswordResetDoneView):
+    template_name = 'password_reset_done.html'

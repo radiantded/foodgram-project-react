@@ -2,44 +2,16 @@ import csv
 import json
 
 from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator
 from django.db.models import Count
 from django.db.models.aggregates import Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
-from foodgram.settings import POSTS_PER_PAGE
 
 from .forms import RecipeCreateForm, RecipeForm
-from .models import (Amount, Favorite, Ingredient, Recipe, ShopList,
+from .models import (Favorite, Ingredient, Recipe, ShopList,
                      Subscription, Tag, User)
-from .utils import get_ingredients, get_tags_for_edit
-
-
-def get_tags_list(request):
-    tags_list = request.GET.getlist('filters')
-    if not tags_list:
-        tags_list = ['breakfast', 'lunch', 'dinner']
-    return tags_list
-
-
-def save_form(form, request, edit=False):
-    my_recipe = form.save(commit=False)
-    if edit is True:
-        my_recipe.recipe_amount.all().delete()
-    if edit is False:
-        my_recipe.author = request.user
-    my_recipe.save()
-    ingredients = get_ingredients(request)
-    for title, quantity in ingredients.items():
-        ingredient = get_object_or_404(Ingredient, title=title)
-        amount = Amount(
-            recipe=my_recipe,
-            ingredient=ingredient,
-            quantity=quantity
-        )
-        amount.save()
-    return my_recipe
+from .utils import apply_pagination, get_tags_for_edit, get_tags_list, save_form
 
 
 def index(request):
@@ -53,16 +25,12 @@ def index(request):
         'tags'
     ).distinct()
 
-    all_tags = Tag.objects.all()
-
-    paginator = Paginator(recipe_list, POSTS_PER_PAGE)
-    page_number = request.GET.get('page')
-    page = paginator.get_page(page_number)
+    paginator, page = apply_pagination(request, recipe_list)
 
     return render(request, 'index.html', {
         'paginator': paginator,
         'page': page,
-        'all_tags': all_tags,
+        'all_tags': Tag.objects.all(),
         'tags_list': tags_list,
     }
     )
@@ -70,11 +38,7 @@ def index(request):
 
 def profile(request, username):
     follow_button = False
-
     tags_list = get_tags_list(request)
-
-    all_tags = Tag.objects.all()
-
     profile = get_object_or_404(User, username=username)
 
     recipes_profile = Recipe.objects.filter(
@@ -87,17 +51,14 @@ def profile(request, username):
 
     if request.user.is_authenticated and request.user != profile:
         follow_button = True
-
-    paginator = Paginator(recipes_profile, POSTS_PER_PAGE)
-    page_number = request.GET.get('page')
-    page = paginator.get_page(page_number)
+    paginator, page = apply_pagination(request, recipes_profile)
 
     return render(request, "authorRecipe.html", {
         'paginator': paginator,
         'page': page,
         'profile': profile,
         'follow_button': follow_button,
-        'all_tags': all_tags,
+        'all_tags': Tag.objects.all(),
         'tags_list': tags_list,
         }
         )
@@ -137,7 +98,8 @@ def ingredients(request):
     text = request.GET.get('query')
     ingredients = list(Ingredient.objects.filter(
         title__istartswith=text
-    ).values())
+    ).values('title'))
+
     return JsonResponse(ingredients, safe=False)
 
 
@@ -149,11 +111,11 @@ def new_recipe(request):
     )
 
     if form.is_valid():
-        my_recipe = save_form(form, request)
+        recipe = save_form(form, request)
         form.save_m2m()
         return redirect(
             'recipe',
-            recipe_id=my_recipe.id,
+            recipe_id=recipe.id,
             username=request.user.username
         )
 
@@ -164,13 +126,10 @@ def new_recipe(request):
 
 @login_required
 def recipe_edit(request, username, recipe_id):
-
     recipe = get_object_or_404(Recipe, pk=recipe_id)
-    author = get_object_or_404(User, id=recipe.author_id)
-    all_tags = Tag.objects.all()
     recipe_tags = recipe.tags.values_list('value', flat=True)
 
-    if request.user != author:
+    if request.user != recipe.author:
         return redirect(
             "recipe",
             username=username,
@@ -186,8 +145,8 @@ def recipe_edit(request, username, recipe_id):
         )
 
         if form.is_valid():
-            my_recipe = save_form(form, request, edit=True)
-            my_recipe.tags.set(new_tags)
+            recipe = save_form(form, request, edit=True)
+            recipe.tags.set(new_tags)
             return redirect(
                 'recipe',
                 recipe_id=recipe.id,
@@ -198,7 +157,7 @@ def recipe_edit(request, username, recipe_id):
     return render(request, "formRecipe.html", {
         'form': form,
         'recipe': recipe,
-        'all_tags': all_tags,
+        'all_tags': Tag.objects.all(),
         'recipe_tags': recipe_tags,
     })
 
@@ -206,9 +165,8 @@ def recipe_edit(request, username, recipe_id):
 @login_required
 def recipe_delete(request, username, recipe_id):
     recipe = get_object_or_404(Recipe, pk=recipe_id)
-    author = get_object_or_404(User, id=recipe.author_id)
 
-    if request.user != author:
+    if request.user != recipe.author:
         return redirect(
             "recipe",
             username=username,
@@ -222,23 +180,18 @@ def recipe_delete(request, username, recipe_id):
 @login_required
 def favorites(request):
     tags_list = get_tags_list(request)
-
-    all_tags = Tag.objects.all()
-
     recipe_list = Recipe.objects.filter(
         favorite_recipes__user=request.user
     ).filter(
         tags__value__in=tags_list
     ).distinct()
 
-    paginator = Paginator(recipe_list, POSTS_PER_PAGE)
-    page_number = request.GET.get('page')
-    page = paginator.get_page(page_number)
+    paginator, page = apply_pagination(request, recipe_list)
 
     return render(request, "favorites.html", {
         'paginator': paginator,
         'page': page,
-        'all_tags': all_tags,
+        'all_tags': Tag.objects.all(),
         'tags_list': tags_list,
     }
     )
@@ -248,7 +201,6 @@ def favorites(request):
 @require_http_methods(["POST", "DELETE"])
 def change_favorites(request, recipe_id):
 
-    # добавить в избранное
     if request.method == "POST":
         recipe_id = json.loads(request.body).get('id')
         recipe = get_object_or_404(
@@ -259,9 +211,8 @@ def change_favorites(request, recipe_id):
             user=request.user, recipe=recipe
         )
 
-        return JsonResponse({'success': True if created else False})
+        return JsonResponse({'success': created})
 
-    # удалить из изобранного
     elif request.method == "DELETE":
         recipe = get_object_or_404(
             Recipe, pk=recipe_id
@@ -325,7 +276,7 @@ def purchases(request, recipe_id):
             user=request.user, recipe=recipe
         )
 
-        return JsonResponse({'success': True if created else False})
+        return JsonResponse({'success': created})
 
     elif request.method == "DELETE":
         recipe = get_object_or_404(Recipe, pk=recipe_id)
@@ -376,10 +327,7 @@ def my_follow(request):
 
     recipes = Recipe.objects.filter(
             author__in=subscriptions)
-
-    paginator = Paginator(subscriptions, POSTS_PER_PAGE)
-    page_number = request.GET.get('page')
-    page = paginator.get_page(page_number)
+    paginator, page = apply_pagination(request, subscriptions)
 
     return render(request, 'myFollow.html', {
         'paginator': paginator,
