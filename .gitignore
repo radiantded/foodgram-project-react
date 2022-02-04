@@ -7,6 +7,7 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+sent_emails/
 static/
 .Python
 build/
