@@ -98,7 +98,7 @@ def ingredients(request):
     text = request.GET.get('query')
     ingredients = list(Ingredient.objects.filter(
         title__istartswith=text
-    ).values('title'))
+    ).values('title', 'dimension'))
 
     return JsonResponse(ingredients, safe=False)
 

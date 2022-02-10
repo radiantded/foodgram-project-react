@@ -4,11 +4,11 @@ from dotenv import load_dotenv
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 load_dotenv(os.path.join(BASE_DIR, '.env'))
-SECRET_KEY = os.getenv('SECRET_KEY', default='SECRET_KEY')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'SECRET_KEY')
 
 DEBUG = True
 
-ALLOWED_HOSTS = os.environ.get('HOSTS')
+ALLOWED_HOSTS = ['178.154.203.126']
 
 INSTALLED_APPS = [
     'main',
