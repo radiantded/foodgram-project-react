@@ -4,7 +4,7 @@
     {% with filter_values=request.GET|get_filter_values %}
         {% for tag in all_tags %}
             <li class="tags__item">
-                <a
+                <a  
                     id="{{ tag.value }}"
                     class="tags__checkbox tags__checkbox_style_{{ tag.style }} 
                     {% if tag.value in filter_values %}tags__checkbox_active {% endif %}"
