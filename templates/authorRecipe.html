@@ -11,7 +11,20 @@
 {% csrf_token %}
 
  <main class="main container">
-    {% include 'includes/tags_index.html'%}
+    <ul class="tags">
+    {% with filter_values=request.GET|get_filter_values %}
+        {% for tag in all_tags %}
+            <li class="tags__item">
+                <a  
+                    id="{{ tag.value }}"
+                    class="tags__checkbox tags__checkbox_style_{{ tag.style }} 
+                    {% if tag.value in filter_values %}tags__checkbox_active {% endif %}"
+                    href="{% url 'profile' profile.username  %}?{{ request|get_filter_link:tag}}"></a>
+                <span class="tags__label">{{ tag.name }}</span>
+            </li>
+        {% endfor %}
+    {% endwith %}
+</ul>    
     {% if follow_button %}
         <div class="author-subscribe" data-author={{ profile.id }}>
             {% if not request|is_follower:profile %}
