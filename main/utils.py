@@ -28,7 +28,7 @@ def get_tags_for_edit(request):
 def get_tags_list(request):
     tags_list = request.GET.getlist('filters')
     if not tags_list:
-        tags_list = ['breakfast', 'lunch', 'dinner']
+        tags_list = Tag.objects.all().values('value')
     return tags_list
 
 

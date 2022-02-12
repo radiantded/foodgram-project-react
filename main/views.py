@@ -16,7 +16,6 @@ from .utils import apply_pagination, get_tags_for_edit, get_tags_list, save_form
 
 def index(request):
     tags_list = get_tags_list(request)
-
     recipe_list = Recipe.objects.filter(
         tags__value__in=tags_list
     ).select_related(
