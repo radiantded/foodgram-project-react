@@ -2,7 +2,7 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from foodgram.settings import POSTS_PER_PAGE
 
-from .models import Amount, Ingredient, Tag
+from .models import Amount, Ingredient, Recipe, Tag
 
 
 def get_ingredients(request):
@@ -18,7 +18,10 @@ def get_ingredients(request):
 def get_tags_for_edit(request):
     data = request.POST.copy()
     tags = []
-    for value in ['lunch', 'dinner', 'breakfast']:
+    # print(data)
+    # print(Tag.objects.all().values('value'))
+    for qs in Tag.objects.all().values('value'):
+        value = qs.get('value')
         if value in data and data.get(value) == 'on':
             tag = get_object_or_404(Tag, value=value)
             tags.append(tag)
@@ -34,12 +37,21 @@ def get_tags_list(request):
 
 def save_form(form, request, edit=False):
     recipe = form.save(commit=False)
+    ingredients = get_ingredients(request)
+    print(ingredients)
+    amount = recipe.recipe_amount.all()
     if edit:
-        recipe.recipe_amount.all().delete()
+        for element in amount:
+            if str(element) in ingredients.keys():
+                object = Amount.objects.get(
+                    recipe__id=recipe.id,
+                    id=str(element.id)
+                )
+                object.delete()
     else:
         recipe.author = request.user
     recipe.save()
-    ingredients = get_ingredients(request)
+
     for title, quantity in ingredients.items():
         ingredient = get_object_or_404(Ingredient, title=title)
         amount = Amount(

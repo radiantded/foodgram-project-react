@@ -43,18 +43,18 @@
                     <li class="single-card__item"><p class="single-card__text"><span class="icon-user"></span>&#160;&#160;{{ recipe.author }}</p></li>
                     {% if owner %}
                         <li class="single-card__item">  <a style="margin-left: 2.5em" href="{% url 'recipe_edit' recipe.author.username recipe.id %}" class="single-card__text">Редактировать рецепт</a></li>
+                        <li class="single-card__item">  <a style="margin-left: 2.5em" href="{% url 'recipe_delete' recipe.author.username recipe.id %}" class="single-card__text">Удалить рецепт</a></li>
                     {% endif %}
                 </ul>
             </div>
             
             <ul class="single-card__items">
-                {% if not request|is_in_purchases:recipe %}
-                    <li class="single-card__item"><button class="button button_style_blue" name="purchases" data-out><span class="icon-plus button-icon"></span> Добавить в покупки</button></li>
-                {% else %}
-                    <li class="single-card__item"><button class="button button_style_blue-outline" name="purchases"><span class="icon-check button-icon"></span> Рецепт добавлен</button></li>
-                {% endif %}
-
                 {% if request.user.is_authenticated %}
+                    {% if not request|is_in_purchases:recipe %}
+                        <li class="single-card__item"><button class="button button_style_blue" name="purchases" data-out><span class="icon-plus button-icon"></span> Добавить в покупки</button></li>
+                    {% else %}
+                        <li class="single-card__item"><button class="button button_style_blue-outline" name="purchases"><span class="icon-check button-icon"></span> Рецепт добавлен</button></li>
+                    {% endif %}
                     {% if not owner %}
                         {% if not request|is_follower:profile %}
                             <li class="single-card__item"><button class="button button_style_light-blue button_size_subscribe" name="subscribe" data-out="">Подписаться на автора</button></li>

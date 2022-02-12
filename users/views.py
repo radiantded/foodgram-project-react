@@ -36,7 +36,7 @@ class Login(LoginView):
 
 
 class PassReset(PasswordResetView):
-    success_url = reverse_lazy('password_reset_done')
+    success_url = reverse_lazy('pass_reset_done')
     template_name = 'password_reset_form.html'
 
 
