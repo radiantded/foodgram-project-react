@@ -3,8 +3,6 @@ FROM python:3.8
 RUN pip install --upgrade pip
 
 WORKDIR /home/app/web
-RUN mkdir /home/app/web/static
-RUN mkdir /home/app/web/media
 
 COPY . .
 
