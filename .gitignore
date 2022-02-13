@@ -8,7 +8,7 @@ __pycache__/
 
 # Distribution / packaging
 sent_emails/
-static/
+# static/
 .Python
 build/
 develop-eggs/
