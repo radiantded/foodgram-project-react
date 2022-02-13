@@ -4,7 +4,9 @@ from django.views.generic import CreateView
 from django.contrib.auth.views import (LoginView, PasswordResetView,
                                        PasswordChangeView,
                                        PasswordChangeDoneView,
-                                       PasswordResetDoneView)
+                                       PasswordResetDoneView,
+                                       PasswordResetConfirmView,
+                                       PasswordResetCompleteView)
 
 from foodgram.settings import ADMIN_EMAIL
 
@@ -36,6 +38,7 @@ class Login(LoginView):
 
 
 class PassReset(PasswordResetView):
+    email_template_name = 'password_reset_email.html'
     success_url = reverse_lazy('pass_reset_done')
     template_name = 'password_reset_form.html'
 
@@ -51,3 +54,12 @@ class PassChangeDone(PasswordChangeDoneView):
 
 class PassResetDone(PasswordResetDoneView):
     template_name = 'password_reset_done.html'
+
+
+class PassResetComplete(PasswordResetCompleteView):
+    template_name = 'password_reset_complete.html'
+
+
+class PassResetConfirm(PasswordResetConfirmView):
+    success_url = reverse_lazy('pass_reset_complete')
+    template_name = 'password_reset_confirm.html'

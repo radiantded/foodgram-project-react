@@ -14,9 +14,7 @@
 ## Как запустить проект, используя Docker:
 
 1) Клонируйте репозиторий с проектом:
-
 ```
-
 git clone https://github.com/radiantded/foodgram-project-react
 
 ```
@@ -24,23 +22,15 @@ git clone https://github.com/radiantded/foodgram-project-react
 2) В директори проекта создайте файл .env, в котором пропишите следующие переменые окружения:
 
 - SECRET_KEY
-
 - SQL_DATABASE
-
 - SQL_USER
-
 - SQL_PASSWORD
-
 - SQL_HOST
-
 - SQL_PORT
-
-
 
 3) С помощью Dockerfile и docker-compose.yaml разверните проект:
 
 ```
-
 docker-compose up --build
 
 ```
@@ -48,13 +38,11 @@ docker-compose up --build
 4) В новом окне терминала узнайте id контейнера foodgram_web и войдите в контейнер:
 
 ```
-
 docker container ls
 
 ```
 
 ```
-
 docker exec -it <CONTAINER_ID> bash
 
 ```
@@ -62,14 +50,11 @@ docker exec -it <CONTAINER_ID> bash
 5) В контейнере выполните миграци, создайте суперпользователя:
 
 ```
-
 python manage.py migrate
-
-
 
 python manage.py createsuperuser
 
 ```
-http://51.250.13.137/?filters=Мясное&filters=Веганское
+http://51.250.13.137/
 admin
 admin

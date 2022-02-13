@@ -16,7 +16,6 @@
                                 <img src="{{ im.url }}" class="recipe__image">
                             {% endthumbnail %}
                             <a href="{% url 'recipe' subscription.username r.id %}" class="card-user__link link">{{ r.title }}</a>
-                            {% comment %} <h3 class="recipe__title">{% url 'recipe' r.author r.id %}{{ r.title }} </h3> {% endcomment %}
                             <p class="recipe__text"><span class="icon-time"></span>&#160;&#160;{{ r.cooking_time }}&#160;мин</p>
                         </div>
                     </li>
