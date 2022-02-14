@@ -18,8 +18,6 @@ def get_ingredients(request):
 def get_tags_for_edit(request):
     data = request.POST.copy()
     tags = []
-    # print(data)
-    # print(Tag.objects.all().values('value'))
     for qs in Tag.objects.all().values('value'):
         value = qs.get('value')
         if value in data and data.get(value) == 'on':
@@ -38,7 +36,6 @@ def get_tags_list(request):
 def save_form(form, request, edit=False):
     recipe = form.save(commit=False)
     ingredients = get_ingredients(request)
-    print(ingredients)
     amount = recipe.recipe_amount.all()
     if edit:
         for element in amount:

@@ -127,7 +127,6 @@ def new_recipe(request):
 def recipe_edit(request, username, recipe_id):
     recipe = get_object_or_404(Recipe, pk=recipe_id)
     recipe_tags = recipe.tags.values_list('value', flat=True)
-    form = RecipeForm(instance=recipe)
 
     if request.user != recipe.author:
         return redirect(
@@ -152,7 +151,7 @@ def recipe_edit(request, username, recipe_id):
                 recipe_id=recipe.id,
                 username=request.user.username
             )
-
+    form = RecipeForm(instance=recipe)
     return render(request, "formRecipe.html", {
         'form': form,
         'recipe': recipe,

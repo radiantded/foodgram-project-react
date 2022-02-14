@@ -6,6 +6,8 @@ from .models import Recipe
 
 class RecipeCreateForm(ModelForm):
 
+    cooking_time = forms.IntegerField(required=True)
+
     class Meta:
         model = Recipe
         fields = ('title', 'tags', 'cooking_time', 'description', 'image',)
@@ -15,6 +17,8 @@ class RecipeCreateForm(ModelForm):
 
 
 class RecipeForm(ModelForm):
+
+    cooking_time = forms.IntegerField(required=True)
 
     class Meta:
         model = Recipe
