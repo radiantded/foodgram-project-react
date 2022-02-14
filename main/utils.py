@@ -57,7 +57,7 @@ def save_form(form, request, edit=False):
         amount = Amount(
             recipe=recipe,
             ingredient=ingredient,
-            quantity=float(quantity)
+            quantity=int(quantity)
         )
         amount.save()
     return recipe
