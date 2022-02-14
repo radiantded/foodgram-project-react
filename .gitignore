@@ -9,7 +9,7 @@ __pycache__/
 # Distribution / packaging
 sent_emails/
 media/
-# static/
+static/
 .Python
 build/
 develop-eggs/
