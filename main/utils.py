@@ -29,7 +29,8 @@ def get_tags_for_edit(request):
 def get_tags_list(request):
     tags_list = request.GET.getlist('filters')
     if not tags_list:
-        tags_list = Tag.objects.all().values('value')
+        query = Tag.objects.all().values('value')
+        tags_list = [dct.get('value') for dct in query]
     return tags_list
 
 

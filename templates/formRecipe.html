@@ -75,7 +75,7 @@
                             <div class="form__dropdown-items"></div>
                         </div>
 
-                        <input type="number" id="cantidad" class="form__input" min="0">
+                        <input type="number" id="cantidad" class="form__input" min="0" oninput="validity.valid||(value='');">
 
                         <label for="cantidad" class="form__label" id="cantidadVal">шт.</label>
                     </div>
@@ -102,7 +102,7 @@
             <div class="form__group">
                 <label for="id_time" class="form__label">Время приготовления</label>
                 <div class="form__field-group form__field-group_time">
-                    <input type="text" id="id_time" name="cooking_time" class="form__input" value="{{ recipe.cooking_time }}" required>
+                    <input type="number" id="id_time" name="cooking_time" class="form__input" min="0" oninput="validity.valid||(value='');" value="{{ recipe.cooking_time }}" required>
                     <label for="id_time" class="form__label">минут</label>
                     {% if form.cooking_time.errors %}
                         {% for error in form.cooking_time.errors %}
