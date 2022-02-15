@@ -323,10 +323,8 @@ def my_follow(request):
             'recipes'
         )
     )
-    print(subscriptions)
     recipes = Recipe.objects.filter(
             author__in=subscriptions)
-    print(recipes)
     paginator, page = apply_pagination(request, subscriptions)
 
     return render(request, 'myFollow.html', {
